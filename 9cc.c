@@ -81,7 +81,7 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-    if (*p == '+' || *p == '-') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
@@ -100,6 +100,8 @@ Token *tokenize(char *p) {
 typedef enum {
   ND_ADD, // +
   ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
   ND_NUM, // integer
 } NodeKind;
 
@@ -112,40 +114,56 @@ struct Node {
   int val;
 };
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
+  return node;
+}
+
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
 }
 
 Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_NUM;
+  Node *node = new_node(ND_NUM);
   node->val = val;
   return node;
 }
 
 Node *expr();
+Node *mul();
 Node *primary();
 
 Node *expr() {
-  Node *node = primary();
+  Node *node = mul();
 
   for (;;) {
     if (consume('+'))
-      node = new_node(ND_ADD, node, primary());
+      node = new_node_binary(ND_ADD, node, mul());
     else if (consume('-'))
-      node = new_node(ND_SUB, node, primary());
+      node = new_node_binary(ND_SUB, node, mul());
     else
       return node;
   }
 }
 
-Node *primary() {
-  return new_node_num(expect_number());
+Node *mul() {
+  Node *node = primary();
+
+  for (;;) {
+    if (consume('*'))
+      node = new_node_binary(ND_MUL, node, primary());
+    else if (consume('/'))
+      node = new_node_binary(ND_DIV, node, primary());
+    else
+      return node;
+  }
 }
+
+Node *primary() { return new_node_num(expect_number()); }
 
 void gen(Node *node) {
   if (node->kind == ND_NUM) {
@@ -159,12 +177,19 @@ void gen(Node *node) {
   printf("  pop rdi\n");
   printf("  pop rax\n");
 
-  switch(node->kind) {
+  switch (node->kind) {
   case ND_ADD:
     printf("  add rax, rdi\n");
     break;
   case ND_SUB:
     printf("  sub rax, rdi\n");
+    break;
+  case ND_MUL:
+    printf("  imul rax, rdi\n");
+    break;
+  case ND_DIV:
+    printf("  cqo\n");
+    printf("  idiv rdi\n");
     break;
   }
 
