@@ -81,7 +81,7 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
+    if (strchr("+-*/()", *p)) {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
@@ -137,6 +137,7 @@ Node *expr();
 Node *mul();
 Node *primary();
 
+// mul ("+" mul | "-" mul)*
 Node *expr() {
   Node *node = mul();
 
@@ -150,6 +151,7 @@ Node *expr() {
   }
 }
 
+// primary ("*" primary | "/" primary)*
 Node *mul() {
   Node *node = primary();
 
@@ -163,7 +165,16 @@ Node *mul() {
   }
 }
 
-Node *primary() { return new_node_num(expect_number()); }
+// "(" expr ")" | num
+Node *primary() {
+  if (consume('(')) {
+    Node *node = expr();
+    expect(')');
+    return node;
+  }
+
+  return new_node_num(expect_number());
+}
 
 void gen(Node *node) {
   if (node->kind == ND_NUM) {
