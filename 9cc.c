@@ -5,36 +5,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-// kind of token
 typedef enum {
   TK_RESERVED, // symbol
-  TK_NUM, // integer
-  TK_EOF, // end of input
+  TK_NUM,      // integer
+  TK_EOF,      // end of input
 } TokenKind;
 
 typedef struct Token Token;
 
 struct Token {
-  TokenKind kind; // type of token
-  Token *next; // next input
-  int val; // if kind is TK_NUM, value of the token
-  char *str; // token strings
+  TokenKind kind; // token kind
+  Token *next;    // next token
+  int val;        // if kind is TK_NUM, value of the token
+  char *str;      // token string
 };
 
 // current token
 Token *token;
 
-// report an error
-// takes the same arguments as printf
-void error (char *fmt, ...) {
+char *user_input;
+
+// reports an error location and exit
+void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " "); // print pos spaces
+  fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
 }
 
-// when token is expected symbol, read a token and return true, otherwise return false
 bool consume(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
     return false;
@@ -42,25 +46,21 @@ bool consume(char op) {
   return true;
 }
 
-// when token is expected symbol, read a token otherwise report error
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
-    error("'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", op);
   token = token->next;
 }
 
-// when token is expected symbol, read a token and return value of number, otherwise report error
 int expect_number() {
-  if(token->kind != TK_NUM)
-    error("not a number");
+  if (token->kind != TK_NUM)
+    error_at(token->str, "not a number");
   int val = token->val;
   token = token->next;
   return val;
 }
 
-bool at_eof() {
-  return token->kind == TK_EOF;
-}
+bool at_eof() { return token->kind == TK_EOF; }
 
 Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1, sizeof(Token));
@@ -89,7 +89,7 @@ Token *tokenize(char *p) {
       cur->val = strtol(p, &p, 10);
       continue;
     }
-    error("cannot tokenize");
+    error_at(p, "cannot tokenize");
   }
   new_token(TK_EOF, cur, p);
   return head.next;
@@ -101,7 +101,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  token = tokenize(argv[1]);
+  user_input = argv[1];
+  token = tokenize(user_input);
 
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
