@@ -72,8 +72,16 @@ Token *tokenize() {
     }
 
     if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
-      cur->len = 1;
+      char *b = p;
+      while ('a' <= *p && *p <= 'z') {
+        p++;
+      }
+      char *e = p;
+      int size = e - b;
+
+      char *s = calloc(1, sizeof(char) * size + 1);
+      strncat(s, b, size);
+      cur = new_token(TK_IDENT, cur, s, size);
       continue;
     }
     if (startsWith(p, "==") || startsWith(p, "!=") || startsWith(p, "<=") ||
@@ -118,7 +126,6 @@ Node *new_node_num(int val) {
   node->val = val;
   return node;
 }
-
 
 Node *primary() {
   if (consume("(")) {
@@ -210,9 +217,7 @@ Node *assign() {
   return node;
 }
 
-Node *expr() {
-  return assign();
-}
+Node *expr() { return assign(); }
 
 Node *stmt() {
   Node *node = expr();
