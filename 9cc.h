@@ -8,6 +8,7 @@
 // Token
 typedef enum {
   TK_RESERVED, // symbol
+  TK_IDENT,      // Identifier
   TK_NUM,      // integer
   TK_EOF,      // end of input
 } TokenKind;
@@ -32,6 +33,8 @@ typedef enum {
   ND_NE,  // !=
   ND_LT,  // <
   ND_LTE, // <=
+  ND_ASSIGN, // =
+  ND_LVAR, // local variable
   ND_NUM, // integer
 } NodeKind;
 
@@ -41,7 +44,8 @@ struct Node {
   NodeKind kind;
   Node *lhs;
   Node *rhs;
-  int val;
+  int val; // ND_NUM
+  int offset; // ND_LVAR
 };
 
 //
@@ -73,13 +77,19 @@ bool at_eof();
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 bool startsWith(char *p, char *q);
-Token *tokenize(char *p);
+Token *tokenize();
 Node *new_node(NodeKind kind);
 Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 
+Node *code[100];
+void program();
+Node *stmt();
+// = expr ";"
 Node *expr();
-// = equality
+// = assign
+Node *assign();
+// = equality ("=" assign)?
 Node *equality();
 // =  ("==" relational | "!=" relational)*
 Node *relational();
@@ -91,4 +101,4 @@ Node *mul();
 Node *unary();
 // = ("+" | "-")? primary
 Node *primary();
-// = num | "(" expr ")"
+// = num | ident | "(" expr ")"
