@@ -60,6 +60,7 @@ struct LVar {
   int offset;
 };
 LVar *locals;
+LVar *find_lvar(Token *tok);
 
 //
 // global
