@@ -48,6 +48,19 @@ struct Node {
   int offset; // ND_LVAR
 };
 
+
+//
+// local variable
+//
+typedef struct LVar LVar;
+struct LVar {
+  LVar *next;
+  char *name;
+  int len;
+  int offset;
+};
+LVar *locals;
+
 //
 // global
 //
