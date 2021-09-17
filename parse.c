@@ -14,9 +14,8 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
-bool consume(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
+bool consume(char *str) {
+  if (strlen(str) != token->len || strncmp(token->str, str, token->len))
     return false;
   token = token->next;
   return true;
@@ -58,6 +57,11 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 
 bool startsWith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
+int is_alnum(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9') || (c == '_');
+}
+
 Token *tokenize() {
   Token head;
   head.next = NULL;
@@ -71,6 +75,11 @@ Token *tokenize() {
       continue;
     }
 
+    if (startsWith(p, "return") && !is_alnum(p[6])) {
+      cur = new_token(TK_RETURN, cur, p, 6);
+      p += 6;
+      continue;
+    }
     if ('a' <= *p && *p <= 'z') {
       char *b = p;
       while ('a' <= *p && *p <= 'z') {
@@ -241,8 +250,17 @@ Node *assign() {
 Node *expr() { return assign(); }
 
 Node *stmt() {
-  Node *node = expr();
-  expect(";");
+  Node *node;
+
+  if (consume("return")) {
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_RETURN;
+    node->lhs = expr();
+  } else {
+    node = expr();
+  }
+  if (!consume(";"))
+    error_at(token->str, "token is not ';'");
   return node;
 }
 

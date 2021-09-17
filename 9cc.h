@@ -11,6 +11,7 @@ typedef enum {
   TK_IDENT,      // Identifier
   TK_NUM,      // integer
   TK_EOF,      // end of input
+  TK_RETURN,      // return
 } TokenKind;
 
 typedef struct Token Token;
@@ -36,6 +37,7 @@ typedef enum {
   ND_ASSIGN, // =
   ND_LVAR, // local variable
   ND_NUM, // integer
+  ND_RETURN, // return
 } NodeKind;
 
 typedef struct Node Node;
@@ -84,13 +86,14 @@ void codegen(Node *node);
 // reports an error location and exit
 void error_at(char *loc, char *fmt, ...);
 
-bool consume(char *op);
+bool consume(char *str);
 void expect(char *op);
 int expect_number();
 bool at_eof();
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 bool startsWith(char *p, char *q);
+int is_alnum(char c);
 Token *tokenize();
 Node *new_node(NodeKind kind);
 Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs);
@@ -98,8 +101,9 @@ Node *new_node_num(int val);
 
 Node *code[100];
 void program();
+// = stmt*
 Node *stmt();
-// = expr ";"
+// = expr ";" | "return" expr ";"
 Node *expr();
 // = assign
 Node *assign();

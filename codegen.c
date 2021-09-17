@@ -11,6 +11,13 @@ void codegen_lval(Node *node) {
 
 void codegen(Node *node) {
   switch (node->kind) {
+    case ND_RETURN:
+      codegen(node->lhs);
+      printf("  pop rax\n");
+      printf("  mov rsp, rbp\n");
+      printf("  pop rbp\n");
+      printf("  ret\n");
+      return;
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
